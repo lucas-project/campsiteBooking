@@ -6,11 +6,22 @@ import {
     Button,
     Stack,
 } from '@mui/material';
+import { useNavigate } from 'react-router-dom';
 import Navigator from '../components/Navigator';
 import Footer from '../components/Footer';
 import '../styles/LandingPage.css';
 
 const LandingPage = () => {
+    const navigate = useNavigate();
+
+    const handleSignIn = () => {
+        navigate('/signin');
+    };
+
+    const handleSignUp = () => {
+        navigate('/signup');
+    };
+
     return (
         <Box>
             <Navigator />
@@ -31,13 +42,23 @@ const LandingPage = () => {
                             <Typography variant="h5" component="p" className="hero-subtitle" sx={{ my: 3 }}>
                                 Modern booking solution for campsite owners
                             </Typography>
-                            <Button 
-                                variant="contained" 
-                                size="large" 
-                                className="cta-button"
-                            >
-                                Start Free Trial
-                            </Button>
+                            <Stack direction="row" spacing={2}>
+                                <Button 
+                                    variant="contained" 
+                                    size="large" 
+                                    className="cta-button"
+                                    onClick={handleSignUp}
+                                >
+                                    Start Free Trial
+                                </Button>
+                                <Button 
+                                    variant="outlined" 
+                                    size="large"
+                                    onClick={handleSignIn}
+                                >
+                                    Sign In
+                                </Button>
+                            </Stack>
                         </Box>
                         <Box flex={1}>
                             <Box

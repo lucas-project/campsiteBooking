@@ -3,22 +3,27 @@ import {
     Box, 
     Container, 
     Typography, 
+    Grid,
+    Paper,
     Button,
-    Card,
-    CardContent,
-    CardActions,
+    List,
+    ListItem,
+    ListItemText,
+    ListItemIcon
 } from '@mui/material';
-import Grid2 from '@mui/material/Grid';
+import CheckIcon from '@mui/icons-material/Check';
+import { useNavigate } from 'react-router-dom';
 import Navigator from '../components/Navigator';
-import Footer from '../components/Footer';
 
 const PricingPage = () => {
-    const pricingPlans = [
+    const navigate = useNavigate();
+
+    const tiers = [
         {
             title: 'Basic',
-            price: '$29',
+            price: '29',
             features: [
-                'Up to 20 campsites',
+                'Up to 50 campsites',
                 'Basic booking management',
                 'Email support',
                 'Basic analytics'
@@ -26,27 +31,26 @@ const PricingPage = () => {
             buttonText: 'Start with Basic'
         },
         {
-            title: 'Professional',
-            price: '$79',
+            title: 'Pro',
+            price: '79',
             features: [
-                'Up to 100 campsites',
-                'Advanced booking management',
+                'Unlimited campsites',
+                'Advanced booking system',
                 'Priority support',
-                'Detailed analytics',
+                'Advanced analytics',
                 'Custom branding'
             ],
-            buttonText: 'Go Professional',
-            highlighted: true
+            buttonText: 'Go Pro'
         },
         {
             title: 'Enterprise',
-            price: 'Custom',
+            price: '299',
             features: [
-                'Unlimited campsites',
-                'Full feature access',
-                '24/7 support',
-                'Advanced analytics',
-                'Custom integration'
+                'Multiple locations',
+                'API access',
+                '24/7 phone support',
+                'Custom development',
+                'Dedicated account manager'
             ],
             buttonText: 'Contact Sales'
         }
@@ -55,56 +59,65 @@ const PricingPage = () => {
     return (
         <Box>
             <Navigator />
-            
-            <Container maxWidth="lg" sx={{ py: 8 }}>
-                <Typography variant="h2" component="h1" sx={{ mb: 6, textAlign: 'center' }}>
-                    Simple, Transparent Pricing
-                </Typography>
-                
-                <Grid2 container spacing={4}>
-                    {pricingPlans.map((plan) => (
-                        <Grid2 item xs={12} md={4} key={plan.title}>
-                            <Card 
-                                sx={{ 
-                                    height: '100%',
-                                    display: 'flex',
-                                    flexDirection: 'column',
-                                    ...(plan.highlighted && {
-                                        border: '2px solid primary.main',
-                                        boxShadow: 3
-                                    })
-                                }}
-                            >
-                                <CardContent sx={{ flexGrow: 1 }}>
-                                    <Typography variant="h4" component="h2" sx={{ mb: 2 }}>
-                                        {plan.title}
-                                    </Typography>
-                                    <Typography variant="h3" component="div" sx={{ mb: 3 }}>
-                                        {plan.price}
-                                        {plan.price !== 'Custom' && <Typography component="span">/month</Typography>}
-                                    </Typography>
-                                    {plan.features.map((feature) => (
-                                        <Typography key={feature} sx={{ mb: 1 }}>
-                                            • {feature}
-                                        </Typography>
-                                    ))}
-                                </CardContent>
-                                <CardActions sx={{ p: 2 }}>
-                                    <Button 
-                                        fullWidth 
-                                        variant={plan.highlighted ? "contained" : "outlined"}
-                                        size="large"
-                                    >
-                                        {plan.buttonText}
-                                    </Button>
-                                </CardActions>
-                            </Card>
-                        </Grid2>
-                    ))}
-                </Grid2>
-            </Container>
+            <Box sx={{ pt: 8 }}> {/* Added padding for fixed navbar */}
+                <Container maxWidth="lg">
+                    <Box sx={{ py: 8 }}>
+                        <Typography variant="h2" component="h1" align="center" gutterBottom>
+                            Pricing Plans
+                        </Typography>
+                        <Typography variant="h5" align="center" color="text.secondary" paragraph>
+                            Choose the perfect plan for your business
+                        </Typography>
 
-            <Footer />
+                        <Grid container spacing={4} sx={{ mt: 4 }}>
+                            {tiers.map((tier) => (
+                                <Grid item key={tier.title} xs={12} md={4}>
+                                    <Paper 
+                                        elevation={3} 
+                                        sx={{ 
+                                            p: 4, 
+                                            textAlign: 'center',
+                                            height: '100%',
+                                            display: 'flex',
+                                            flexDirection: 'column'
+                                        }}
+                                    >
+                                        <Typography variant="h4" component="h2" gutterBottom>
+                                            {tier.title}
+                                        </Typography>
+                                        <Box sx={{ mb: 4 }}>
+                                            <Typography variant="h3" component="span">
+                                                ${tier.price}
+                                            </Typography>
+                                            <Typography variant="h6" component="span" color="text.secondary">
+                                                /mo
+                                            </Typography>
+                                        </Box>
+                                        <List sx={{ mb: 4, flexGrow: 1 }}>
+                                            {tier.features.map((feature) => (
+                                                <ListItem key={feature} sx={{ px: 0 }}>
+                                                    <ListItemIcon sx={{ minWidth: 36 }}>
+                                                        <CheckIcon color="primary" />
+                                                    </ListItemIcon>
+                                                    <ListItemText primary={feature} />
+                                                </ListItem>
+                                            ))}
+                                        </List>
+                                        <Button 
+                                            variant="contained" 
+                                            size="large"
+                                            onClick={() => navigate('/signup')}
+                                            fullWidth
+                                        >
+                                            {tier.buttonText}
+                                        </Button>
+                                    </Paper>
+                                </Grid>
+                            ))}
+                        </Grid>
+                    </Box>
+                </Container>
+            </Box>
         </Box>
     );
 };
