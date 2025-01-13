@@ -22,6 +22,11 @@ import {
     Stack,
     FormControlLabel,
     Switch,
+    Checkbox,
+    FormGroup,
+    Accordion,
+    AccordionSummary,
+    AccordionDetails,
 } from '@mui/material';
 import {
     Edit as EditIcon,
@@ -33,9 +38,26 @@ import {
     Phone as PhoneIcon,
     Email as EmailIcon,
     Language as WebsiteIcon,
+    Wifi as WifiIcon,
+    LocalParking as ParkingIcon,
+    Pool as PoolIcon,
+    Restaurant as RestaurantIcon,
+    Pets as PetsIcon,
+    LocalLaundryService as LaundryIcon,
+    Fireplace as FireplaceIcon,
+    BeachAccess as BeachIcon,
+    DirectionsBoat as BoatIcon,
+    DirectionsBike as BikeIcon,
+    Hiking as HikingIcon,
+    Shower as ShowerIcon,
+    Wc as ToiletIcon,
+    Kitchen as KitchenIcon,
+    LocalCafe as CafeIcon,
+    Security as SecurityIcon,
 } from '@mui/icons-material';
 import Navigator from '../components/Navigator';
 import { useAuth } from '../contexts/AuthContext';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 
 // TabPanel component for tab content
 function TabPanel({ children, value, index, ...other }) {
@@ -53,6 +75,65 @@ function TabPanel({ children, value, index, ...other }) {
         </div>
     );
 }
+
+// Add this constant for predefined amenities
+const PREDEFINED_AMENITIES = [
+    { id: 'wifi', label: 'Wi-Fi', icon: WifiIcon },
+    { id: 'parking', label: 'Parking', icon: ParkingIcon },
+    { id: 'pool', label: 'Swimming Pool', icon: PoolIcon },
+    { id: 'restaurant', label: 'Restaurant', icon: RestaurantIcon },
+    { id: 'pets', label: 'Pet Friendly', icon: PetsIcon },
+    { id: 'laundry', label: 'Laundry', icon: LaundryIcon },
+    { id: 'firepit', label: 'Fire Pit', icon: FireplaceIcon },
+    { id: 'beach', label: 'Beach Access', icon: BeachIcon },
+    { id: 'boat', label: 'Boat Rental', icon: BoatIcon },
+    { id: 'bike', label: 'Bike Rental', icon: BikeIcon },
+    { id: 'hiking', label: 'Hiking Trails', icon: HikingIcon },
+    { id: 'shower', label: 'Showers', icon: ShowerIcon },
+    { id: 'toilet', label: 'Toilets', icon: ToiletIcon },
+    { id: 'kitchen', label: 'Kitchen', icon: KitchenIcon },
+    { id: 'cafe', label: 'Cafe', icon: CafeIcon },
+    { id: 'security', label: '24/7 Security', icon: SecurityIcon },
+];
+
+// Add this constant for predefined rules
+const PREDEFINED_RULES = [
+    {
+        category: 'Check-in/Check-out',
+        rules: [
+            { id: 'checkin', label: 'Check-in time: 2:00 PM', isCustomizable: true },
+            { id: 'checkout', label: 'Check-out time: 11:00 AM', isCustomizable: true },
+            { id: 'late_checkout', label: 'Late check-out must be arranged in advance' },
+        ]
+    },
+    {
+        category: 'Safety',
+        rules: [
+            { id: 'fire_safety', label: 'Campfires only in designated fire pits' },
+            { id: 'quiet_hours', label: 'Quiet hours: 10:00 PM - 7:00 AM', isCustomizable: true },
+            { id: 'supervision', label: 'Children must be supervised at all times' },
+            { id: 'emergency', label: 'Emergency contact information must be provided' },
+        ]
+    },
+    {
+        category: 'Environmental',
+        rules: [
+            { id: 'trash', label: 'Pack in, pack out - Take all trash with you' },
+            { id: 'wildlife', label: 'Do not feed or approach wildlife' },
+            { id: 'vegetation', label: 'Do not damage or remove vegetation' },
+            { id: 'water', label: 'No washing dishes in streams or lakes' },
+        ]
+    },
+    {
+        category: 'Camping Etiquette',
+        rules: [
+            { id: 'noise', label: 'No loud music or excessive noise' },
+            { id: 'pets', label: 'Pets must be leashed and cleaned up after' },
+            { id: 'parking', label: 'Park only in designated areas' },
+            { id: 'group_size', label: 'Maximum group size: 6 people per site', isCustomizable: true },
+        ]
+    }
+];
 
 const BusinessProfile = () => {
     const [value, setValue] = useState(0);
@@ -77,7 +158,8 @@ const BusinessProfile = () => {
             start: '09:00',
             end: '17:00'
         },
-        bookings: []
+        bookings: [],
+        customRules: []
     });
 
     const [openDialog, setOpenDialog] = useState({
@@ -88,7 +170,7 @@ const BusinessProfile = () => {
 
     const [newItem, setNewItem] = useState({
         amenity: '',
-        rule: '',
+        rule: { title: '', content: '' },
         faq: { question: '', answer: '' }
     });
 
@@ -202,7 +284,10 @@ const BusinessProfile = () => {
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify(businessInfo),
+                body: JSON.stringify({
+                    ...businessInfo,
+                    amenities: businessInfo.amenities // Now sending array of amenity IDs
+                }),
             });
 
             if (response.ok) {
@@ -259,6 +344,23 @@ const BusinessProfile = () => {
     };
 
     const handleAddItem = (type) => {
+        if (type === 'rule') {
+            // Skip if either title or content is empty
+            if (!newItem.rule?.title?.trim() || !newItem.rule?.content?.trim()) return;
+            
+            setBusinessInfo(prev => ({
+                ...prev,
+                customRules: [...(prev.customRules || []), {
+                    title: newItem.rule.title,
+                    content: newItem.rule.content
+                }]
+            }));
+            setNewItem(prev => ({ ...prev, rule: { title: '', content: '' } }));
+            setOpenDialog(prev => ({ ...prev, rule: false }));
+            return; // Exit early after handling rule
+        }
+
+        // Handle other types (amenity, faq)
         if (type === 'faq' && (!newItem.faq.question || !newItem.faq.answer)) return;
         if (type !== 'faq' && !newItem[type]) return;
 
@@ -676,144 +778,354 @@ const BusinessProfile = () => {
 
                     {/* Amenities Tab */}
                     <TabPanel value={value} index={1}>
-                        <Grid container spacing={2}>
-                            {(businessInfo.amenities || []).map((amenity, index) => (
-                                <Grid item xs={12} sm={6} md={4} key={index}>
-                                    <Card>
-                                        <CardContent>
-                                            <Typography variant="body1">
-                                                {amenity}
-                                            </Typography>
-                                            {editMode && (
-                                                <IconButton
-                                                    onClick={() => handleDeleteItem('amenity', index)}
-                                                    size="small"
-                                                    color="error"
-                                                >
-                                                    <DeleteIcon />
-                                                </IconButton>
-                                            )}
-                                        </CardContent>
-                                    </Card>
-                                </Grid>
-                            ))}
-                            {editMode && (
-                                <Grid item xs={12} sm={6} md={4}>
-                                    <Card
-                                        sx={{
-                                            height: '100%',
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            justifyContent: 'center',
-                                            cursor: 'pointer',
-                                        }}
-                                        onClick={() => setOpenDialog({ ...openDialog, amenity: true })}
+                        <Paper elevation={3} sx={{ p: 3 }}>
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+                                <Typography variant="h6">Amenities</Typography>
+                                {editMode && (
+                                    <Button
+                                        variant="contained"
+                                        onClick={() => handleSave()}
+                                        startIcon={<SaveIcon />}
                                     >
-                                        <CardContent sx={{ textAlign: 'center' }}>
-                                            <AddIcon sx={{ fontSize: 40, color: 'text.secondary' }} />
-                                            <Typography color="text.secondary">
-                                                Add Amenity
-                                            </Typography>
-                                        </CardContent>
-                                    </Card>
+                                        Save Changes
+                                    </Button>
+                                )}
+                            </Box>
+                            
+                            <FormGroup>
+                                <Grid container spacing={2}>
+                                    {PREDEFINED_AMENITIES
+                                        // Filter amenities based on edit mode
+                                        .filter(amenity => editMode || businessInfo.amenities.includes(amenity.id))
+                                        .map((amenity) => {
+                                            const Icon = amenity.icon;
+                                            return (
+                                                <Grid item xs={12} sm={6} md={4} key={amenity.id}>
+                                                    <Paper 
+                                                        elevation={1} 
+                                                        sx={{ 
+                                                            p: 2,
+                                                            display: 'flex',
+                                                            alignItems: 'center',
+                                                            bgcolor: businessInfo.amenities.includes(amenity.id) ? 'action.selected' : 'background.paper'
+                                                        }}
+                                                    >
+                                                        <FormControlLabel
+                                                            control={
+                                                                <Checkbox
+                                                                    checked={businessInfo.amenities.includes(amenity.id)}
+                                                                    onChange={(e) => {
+                                                                        if (editMode) {
+                                                                            setBusinessInfo(prev => ({
+                                                                                ...prev,
+                                                                                amenities: e.target.checked
+                                                                                    ? [...prev.amenities, amenity.id]
+                                                                                    : prev.amenities.filter(id => id !== amenity.id)
+                                                                            }));
+                                                                        }
+                                                                    }}
+                                                                    disabled={!editMode}
+                                                                    sx={{ 
+                                                                        display: editMode ? 'inline-flex' : 'none' 
+                                                                    }}
+                                                                />
+                                                            }
+                                                            label={
+                                                                <Box sx={{ 
+                                                                    display: 'flex', 
+                                                                    alignItems: 'center', 
+                                                                    gap: 1,
+                                                                    color: businessInfo.amenities.includes(amenity.id) ? 'primary.main' : 'text.primary'
+                                                                }}>
+                                                                    <Icon color={businessInfo.amenities.includes(amenity.id) ? "primary" : "action"} />
+                                                                    <Typography>{amenity.label}</Typography>
+                                                                </Box>
+                                                            }
+                                                        />
+                                                    </Paper>
+                                                </Grid>
+                                            );
+                                        })}
                                 </Grid>
-                            )}
-                        </Grid>
+                            </FormGroup>
+                        </Paper>
                     </TabPanel>
 
                     {/* Rules Tab */}
                     <TabPanel value={value} index={2}>
-                        <Grid container spacing={2}>
-                            {(businessInfo.rules || []).map((rule, index) => (
-                                <Grid item xs={12} sm={6} md={4} key={index}>
-                                    <Card>
-                                        <CardContent>
-                                            <Typography variant="body1">
-                                                {rule}
-                                            </Typography>
-                                            {editMode && (
-                                                <IconButton
-                                                    onClick={() => handleDeleteItem('rule', index)}
-                                                    size="small"
-                                                    color="error"
-                                                >
-                                                    <DeleteIcon />
-                                                </IconButton>
-                                            )}
-                                        </CardContent>
-                                    </Card>
-                                </Grid>
-                            ))}
-                            {editMode && (
-                                <Grid item xs={12} sm={6} md={4}>
-                                    <Card
-                                        sx={{
-                                            height: '100%',
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            justifyContent: 'center',
-                                            cursor: 'pointer',
-                                        }}
-                                        onClick={() => setOpenDialog({ ...openDialog, rule: true })}
+                        <Paper elevation={3} sx={{ p: 3 }}>
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                                <Typography variant="h6">Campsite Rules</Typography>
+                                {editMode && (
+                                    <Button
+                                        variant="contained"
+                                        onClick={() => handleSave()}
+                                        startIcon={<SaveIcon />}
+                                        size="small"
                                     >
-                                        <CardContent sx={{ textAlign: 'center' }}>
-                                            <AddIcon sx={{ fontSize: 40, color: 'text.secondary' }} />
-                                            <Typography color="text.secondary">
-                                                Add Rule
-                                            </Typography>
-                                        </CardContent>
-                                    </Card>
-                                </Grid>
+                                        Save Changes
+                                    </Button>
+                                )}
+                            </Box>
+
+                            {/* Custom Rules Section - Shown First */}
+                            {(businessInfo.customRules && businessInfo.customRules.length > 0) && (
+                                <Box sx={{ mb: 3 }}>
+                                    <Typography
+                                        variant="subtitle1"
+                                        sx={{
+                                            color: 'primary.main',
+                                            mb: 1,
+                                            borderBottom: '1px solid',
+                                            borderColor: 'divider',
+                                            pb: 0.5
+                                        }}
+                                    >
+                                        Special Rules
+                                    </Typography>
+                                    <Grid container spacing={2}>
+                                        {businessInfo.customRules.map((rule, index) => (
+                                            <Grid item xs={12} sm={6} key={index}>
+                                                <Paper 
+                                                    elevation={1} 
+                                                    sx={{ 
+                                                        p: 1.5,
+                                                        display: 'flex',
+                                                        flexDirection: 'column',
+                                                        bgcolor: 'background.default'
+                                                    }}
+                                                >
+                                                    <Box sx={{ 
+                                                        display: 'flex', 
+                                                        alignItems: 'center', 
+                                                        gap: 1,
+                                                        mb: 0.5
+                                                    }}>
+                                                        <Typography 
+                                                            sx={{ 
+                                                                bgcolor: 'primary.main',
+                                                                color: 'white',
+                                                                minWidth: 20,
+                                                                height: 20,
+                                                                borderRadius: '50%',
+                                                                display: 'flex',
+                                                                alignItems: 'center',
+                                                                justifyContent: 'center',
+                                                                fontSize: '0.8rem'
+                                                            }}
+                                                        >
+                                                            {index + 1}
+                                                        </Typography>
+                                                        <Typography 
+                                                            variant="subtitle2"
+                                                            sx={{ flex: 1 }}
+                                                        >
+                                                            {rule.title}
+                                                        </Typography>
+                                                        {editMode && (
+                                                            <IconButton
+                                                                size="small"
+                                                                color="error"
+                                                                onClick={() => {
+                                                                    setBusinessInfo(prev => ({
+                                                                        ...prev,
+                                                                        customRules: prev.customRules.filter((_, i) => i !== index)
+                                                                    }));
+                                                                }}
+                                                            >
+                                                                <DeleteIcon fontSize="small" />
+                                                            </IconButton>
+                                                        )}
+                                                    </Box>
+                                                    <Typography 
+                                                        variant="body2" 
+                                                        color="text.secondary"
+                                                        sx={{ ml: 3.5 }}
+                                                    >
+                                                        {rule.content}
+                                                    </Typography>
+                                                </Paper>
+                                            </Grid>
+                                        ))}
+                                    </Grid>
+                                </Box>
                             )}
-                        </Grid>
+
+                            {/* Predefined Rules - Only show checked ones in view mode */}
+                            {PREDEFINED_RULES.map((category) => {
+                                const categoryRules = category.rules.filter(rule => 
+                                    editMode || businessInfo.rules.includes(rule.id)
+                                );
+
+                                if (!editMode && categoryRules.length === 0) return null;
+
+                                return (
+                                    <Box key={category.category} sx={{ mb: 2 }}>
+                                        <Typography
+                                            variant="subtitle1"
+                                            sx={{
+                                                color: 'primary.main',
+                                                mb: 1,
+                                                borderBottom: '1px solid',
+                                                borderColor: 'divider',
+                                                pb: 0.5
+                                            }}
+                                        >
+                                            {category.category}
+                                        </Typography>
+                                        <Grid container spacing={1.5}>
+                                            {categoryRules.map((rule) => (
+                                                <Grid item xs={12} sm={6} key={rule.id}>
+                                                    <Paper
+                                                        elevation={1}
+                                                        sx={{
+                                                            p: 1.5,
+                                                            display: 'flex',
+                                                            alignItems: 'flex-start',
+                                                            bgcolor: businessInfo.rules.includes(rule.id) ? 'action.selected' : 'background.paper'
+                                                        }}
+                                                    >
+                                                        {editMode && (
+                                                            <Checkbox
+                                                                checked={businessInfo.rules.includes(rule.id)}
+                                                                onChange={(e) => {
+                                                                    setBusinessInfo(prev => ({
+                                                                        ...prev,
+                                                                        rules: e.target.checked
+                                                                            ? [...prev.rules, rule.id]
+                                                                            : prev.rules.filter(id => id !== rule.id)
+                                                                    }));
+                                                                }}
+                                                                size="small"
+                                                            />
+                                                        )}
+                                                        <Box sx={{ flex: 1 }}>
+                                                            <Typography variant="body2">{rule.label}</Typography>
+                                                            {editMode && rule.isCustomizable && (
+                                                                <TextField
+                                                                    size="small"
+                                                                    fullWidth
+                                                                    placeholder="Customize this rule"
+                                                                    variant="outlined"
+                                                                    sx={{ mt: 1, fontSize: '0.875rem' }}
+                                                                    value={businessInfo.customRules?.[rule.id] || ''}
+                                                                    onChange={(e) => {
+                                                                        setBusinessInfo(prev => ({
+                                                                            ...prev,
+                                                                            customRules: {
+                                                                                ...prev.customRules,
+                                                                                [rule.id]: e.target.value
+                                                                            }
+                                                                        }));
+                                                                    }}
+                                                                />
+                                                            )}
+                                                        </Box>
+                                                    </Paper>
+                                                </Grid>
+                                            ))}
+                                        </Grid>
+                                    </Box>
+                                );
+                            })}
+
+                            {editMode && (
+                                <Button
+                                    variant="outlined"
+                                    startIcon={<AddIcon />}
+                                    onClick={() => setOpenDialog({ ...openDialog, rule: true })}
+                                    size="small"
+                                    sx={{ mt: 2 }}
+                                >
+                                    Add Custom Rule
+                                </Button>
+                            )}
+                        </Paper>
                     </TabPanel>
 
                     {/* FAQs Tab */}
                     <TabPanel value={value} index={3}>
-                        <Grid container spacing={2}>
-                            {(businessInfo.faqs || []).map((faq, index) => (
-                                <Grid item xs={12} key={index}>
-                                    <Card>
-                                        <CardContent>
-                                            <Typography variant="h6" gutterBottom>
-                                                {faq.question}
-                                            </Typography>
-                                            <Typography variant="body1" color="text.secondary">
-                                                {faq.answer}
-                                            </Typography>
-                                            {editMode && (
-                                                <Box sx={{ mt: 1 }}>
-                                                    <IconButton
-                                                        onClick={() => handleDeleteItem('faq', index)}
-                                                        size="small"
-                                                        color="error"
-                                                    >
-                                                        <DeleteIcon />
-                                                    </IconButton>
-                                                </Box>
-                                            )}
-                                        </CardContent>
-                                    </Card>
-                                </Grid>
-                            ))}
-                            {editMode && (
-                                <Grid item xs={12}>
-                                    <Card
-                                        sx={{
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            justifyContent: 'center',
-                                            cursor: 'pointer',
-                                            p: 2,
-                                        }}
+                        <Paper elevation={3} sx={{ p: 3 }}>
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+                                <Typography variant="h6">Frequently Asked Questions</Typography>
+                                {editMode && (
+                                    <Button
+                                        variant="contained"
                                         onClick={() => setOpenDialog({ ...openDialog, faq: true })}
+                                        startIcon={<AddIcon />}
+                                        size="small"
                                     >
-                                        <AddIcon sx={{ mr: 1 }} />
-                                        <Typography>Add FAQ</Typography>
-                                    </Card>
-                                </Grid>
-                            )}
-                        </Grid>
+                                        Add FAQ
+                                    </Button>
+                                )}
+                            </Box>
+                            <Grid container spacing={2}>
+                                {(businessInfo.faqs || []).map((faq, index) => (
+                                    <Grid item xs={12} key={index}>
+                                        <Paper 
+                                            elevation={1}
+                                            sx={{ 
+                                                p: 2,
+                                                bgcolor: 'background.default',
+                                                position: 'relative'
+                                            }}
+                                        >
+                                            <Box sx={{ display: 'flex', gap: 2, alignItems: 'flex-start' }}>
+                                                <Typography
+                                                    sx={{
+                                                        bgcolor: 'grey.800',
+                                                        color: 'white',
+                                                        width: 24,
+                                                        height: 24,
+                                                        borderRadius: '50%',
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        justifyContent: 'center',
+                                                        fontSize: '0.875rem',
+                                                        flexShrink: 0
+                                                    }}
+                                                >
+                                                    {index + 1}
+                                                </Typography>
+                                                <Box sx={{ flex: 1 }}>
+                                                    <Typography 
+                                                        variant="subtitle1" 
+                                                        sx={{ 
+                                                            fontWeight: 600,
+                                                            color: 'grey.900',
+                                                            mb: 1
+                                                        }}
+                                                    >
+                                                        {faq.question}
+                                                    </Typography>
+                                                    <Typography 
+                                                        variant="body2" 
+                                                        color="text.secondary"
+                                                        sx={{ pl: 0 }}
+                                                    >
+                                                        {faq.answer}
+                                                    </Typography>
+                                                </Box>
+                                                {editMode && (
+                                                    <IconButton
+                                                        size="small"
+                                                        onClick={() => handleDeleteItem('faq', index)}
+                                                        sx={{
+                                                            color: 'grey.500',
+                                                            '&:hover': {
+                                                                color: 'error.main'
+                                                            }
+                                                        }}
+                                                    >
+                                                        <DeleteIcon fontSize="small" />
+                                                    </IconButton>
+                                                )}
+                                            </Box>
+                                        </Paper>
+                                    </Grid>
+                                ))}
+                            </Grid>
+                        </Paper>
                     </TabPanel>
 
                     {/* Bookings Tab */}
@@ -994,334 +1306,213 @@ const BusinessProfile = () => {
                     {/* Campsites Tab */}
                     <TabPanel value={value} index={5}>
                         <Paper elevation={3} sx={{ p: 3 }}>
-                            <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3 }}>
-                                <Typography variant="h6">Campsites</Typography>
-                                <Button
-                                    variant="contained"
-                                    startIcon={<AddIcon />}
-                                    onClick={() => setCampsiteDialog(true)}
-                                >
-                                    Add Campsite
-                                </Button>
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                                <Typography variant="h6">Campsite Management</Typography>
+                                {editMode && (
+                                    <Button
+                                        variant="contained"
+                                        onClick={() => setCampsiteDialog(true)}
+                                        startIcon={<AddIcon />}
+                                        size="small"
+                                    >
+                                        Add Campsite
+                                    </Button>
+                                )}
                             </Box>
 
-                            <Grid container spacing={3}>
+                            <Grid container spacing={2}>
                                 {campsites.map((campsite) => (
-                                    <Grid item xs={12} md={6} key={campsite.id}>
-                                        <Card>
-                                            <CardMedia
-                                                component="div"
-                                                sx={{
-                                                    position: 'relative',
-                                                    height: 200,
-                                                    display: 'flex',
-                                                    overflow: 'hidden'
-                                                }}
-                                            >
-                                                {campsite.images.length > 0 ? (
-                                                    <img
-                                                        src={campsite.images[0].url}
-                                                        alt={campsite.name}
-                                                        style={{
-                                                            width: '100%',
-                                                            height: '100%',
-                                                            objectFit: 'cover'
-                                                        }}
-                                                    />
-                                                ) : (
-                                                    <Box
-                                                        sx={{
-                                                            width: '100%',
-                                                            height: '100%',
-                                                            display: 'flex',
-                                                            alignItems: 'center',
-                                                            justifyContent: 'center',
-                                                            bgcolor: 'grey.200'
-                                                        }}
-                                                    >
-                                                        <Typography color="text.secondary">No Image</Typography>
-                                                    </Box>
-                                                )}
-                                                {editMode && (
-                                                    <Box
-                                                        component="label"
-                                                        sx={{
-                                                            position: 'absolute',
-                                                            bottom: 8,
-                                                            right: 8,
-                                                            bgcolor: 'background.paper',
-                                                            borderRadius: '50%'
-                                                        }}
-                                                    >
-                                                        <input
-                                                            type="file"
-                                                            hidden
-                                                            multiple
-                                                            accept="image/*"
-                                                            onChange={(e) => {
-                                                                setSelectedCampsite(campsite);
-                                                                handleCampsiteImageUpload(e);
+                                    <Grid item xs={12} key={campsite.id}>
+                                        <Paper 
+                                            elevation={1}
+                                            sx={{ 
+                                                overflow: 'hidden',
+                                                bgcolor: 'background.default'
+                                            }}
+                                        >
+                                            <Grid container spacing={2} sx={{ p: 2 }}>
+                                                {/* Image Section */}
+                                                <Grid item xs={12} sm={3}>
+                                                    {campsite.images?.[0] ? (
+                                                        <Box
+                                                            component="img"
+                                                            src={campsite.images[0].url}
+                                                            alt={campsite.name}
+                                                            sx={{
+                                                                width: '100%',
+                                                                height: 160,
+                                                                objectFit: 'cover',
+                                                                borderRadius: 1
                                                             }}
                                                         />
-                                                        <IconButton component="span">
-                                                            <PhotoCameraIcon />
-                                                        </IconButton>
-                                                    </Box>
-                                                )}
-                                            </CardMedia>
-                                            <CardContent>
-                                                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                                    <Typography variant="h6" gutterBottom>
-                                                        {campsite.name}
-                                                    </Typography>
-                                                    {editMode && (
-                                                        <Box>
-                                                            <IconButton
-                                                                color="primary"
-                                                                onClick={() => {
-                                                                    setEditingCampsite(campsite);
-                                                                    setEditCampsiteDialog(true);
-                                                                }}
-                                                            >
-                                                                <EditIcon />
-                                                            </IconButton>
-                                                            <IconButton
-                                                                color="error"
-                                                                onClick={() => handleDeleteCampsite(campsite.id)}
-                                                            >
-                                                                <DeleteIcon />
-                                                            </IconButton>
+                                                    ) : (
+                                                        <Box
+                                                            sx={{
+                                                                width: '100%',
+                                                                height: 160,
+                                                                bgcolor: 'grey.100',
+                                                                borderRadius: 1,
+                                                                display: 'flex',
+                                                                alignItems: 'center',
+                                                                justifyContent: 'center'
+                                                            }}
+                                                        >
+                                                            <PhotoCameraIcon color="disabled" />
                                                         </Box>
                                                     )}
-                                                </Box>
-                                                <Typography variant="body2" color="text.secondary" paragraph>
-                                                    {campsite.description}
-                                                </Typography>
-                                                <Grid container spacing={2}>
-                                                    <Grid item xs={6}>
-                                                        <Typography variant="body2">
-                                                            Price: ${campsite.price}/night
-                                                        </Typography>
-                                                    </Grid>
-                                                    <Grid item xs={6}>
-                                                        <Typography variant="body2">
-                                                            Capacity: {campsite.capacity} people
-                                                        </Typography>
-                                                    </Grid>
                                                 </Grid>
-                                            </CardContent>
-                                            <CardContent>
-                                                <Box sx={{ height: 400, border: '1px solid #ddd', p: 2 }}>
-                                                    <Typography variant="subtitle1" gutterBottom>
-                                                        Availability Calendar (Coming Soon)
-                                                    </Typography>
-                                                    <Grid container spacing={1}>
-                                                        {Array.from({ length: 31 }, (_, i) => (
-                                                            <Grid item xs={1.7} key={i}>
-                                                                <Button
-                                                                    variant="outlined"
-                                                                    fullWidth
-                                                                    sx={{
-                                                                        height: '50px',
-                                                                        backgroundColor: campsite.availability.some(
-                                                                            slot => new Date(slot.start).getDate() === i + 1
-                                                                        ) ? '#f44336' : '#fff'
+
+                                                {/* Info Section */}
+                                                <Grid item xs={12} sm={9}>
+                                                    <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                                                        <Typography variant="h6" sx={{ fontSize: '1.1rem' }}>
+                                                            {campsite.name}
+                                                        </Typography>
+                                                        {editMode && (
+                                                            <Box sx={{ display: 'flex', gap: 1 }}>
+                                                                <IconButton
+                                                                    size="small"
+                                                                    onClick={() => {
+                                                                        setEditingCampsite(campsite);
+                                                                        setEditCampsiteDialog(true);
                                                                     }}
+                                                                    sx={{ color: 'grey.600' }}
                                                                 >
-                                                                    {i + 1}
-                                                                </Button>
-                                                            </Grid>
-                                                        ))}
+                                                                    <EditIcon fontSize="small" />
+                                                                </IconButton>
+                                                                <IconButton
+                                                                    size="small"
+                                                                    onClick={() => handleDeleteCampsite(campsite.id)}
+                                                                    sx={{ color: 'grey.600' }}
+                                                                >
+                                                                    <DeleteIcon fontSize="small" />
+                                                                </IconButton>
+                                                            </Box>
+                                                        )}
+                                                    </Box>
+
+                                                    <Grid container spacing={2} sx={{ mb: 2 }}>
+                                                        <Grid item xs={6} sm={3}>
+                                                            <Typography variant="body2" color="text.secondary">
+                                                                Price per night
+                                                            </Typography>
+                                                            <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+                                                                ${campsite.price}
+                                                            </Typography>
+                                                        </Grid>
+                                                        <Grid item xs={6} sm={3}>
+                                                            <Typography variant="body2" color="text.secondary">
+                                                                Max Capacity
+                                                            </Typography>
+                                                            <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+                                                                {campsite.capacity} people
+                                                            </Typography>
+                                                        </Grid>
                                                     </Grid>
+
+                                                    <Typography 
+                                                        variant="body2" 
+                                                        color="text.secondary"
+                                                        sx={{ mb: 2 }}
+                                                    >
+                                                        {campsite.description}
+                                                    </Typography>
+
+                                                    {/* Compact Calendar */}
+                                                    <Accordion 
+                                                        sx={{ 
+                                                            '&:before': { display: 'none' },
+                                                            boxShadow: 'none',
+                                                            bgcolor: 'transparent'
+                                                        }}
+                                                    >
+                                                        <AccordionSummary
+                                                            expandIcon={<ExpandMoreIcon />}
+                                                            sx={{ 
+                                                                px: 1,
+                                                                py: 0,
+                                                                minHeight: 36,
+                                                                '& .MuiAccordionSummary-content': {
+                                                                    my: 0
+                                                                }
+                                                            }}
+                                                        >
+                                                            <Typography variant="subtitle2" color="primary">
+                                                                View Availability
+                                                            </Typography>
+                                                        </AccordionSummary>
+                                                        <AccordionDetails sx={{ px: 0, py: 1 }}>
+                                                            <Box sx={{ 
+                                                                display: 'grid', 
+                                                                gridTemplateColumns: 'repeat(auto-fill, minmax(36px, 1fr))',
+                                                                gap: 0.5
+                                                            }}>
+                                                                {Array.from({ length: 31 }, (_, i) => (
+                                                                    <Button
+                                                                        key={i}
+                                                                        variant="outlined"
+                                                                        size="small"
+                                                                        sx={{
+                                                                            minWidth: 36,
+                                                                            height: 36,
+                                                                            p: 0,
+                                                                            fontSize: '0.75rem',
+                                                                            backgroundColor: campsite.availability.some(
+                                                                                slot => new Date(slot.start).getDate() === i + 1
+                                                                            ) ? 'error.light' : 'inherit',
+                                                                            borderColor: 'divider',
+                                                                            '&:hover': {
+                                                                                borderColor: 'primary.main'
+                                                                            }
+                                                                        }}
+                                                                    >
+                                                                        {i + 1}
+                                                                    </Button>
+                                                                ))}
+                                                            </Box>
+                                                        </AccordionDetails>
+                                                    </Accordion>
+                                                </Grid>
+                                            </Grid>
+
+                                            {/* Thumbnail Gallery */}
+                                            {campsite.images?.length > 1 && (
+                                                <Box sx={{ 
+                                                    p: 2, 
+                                                    pt: 0,
+                                                    display: 'flex',
+                                                    gap: 1,
+                                                    overflowX: 'auto',
+                                                    '&::-webkit-scrollbar': {
+                                                        height: 6
+                                                    },
+                                                    '&::-webkit-scrollbar-thumb': {
+                                                        backgroundColor: 'grey.300',
+                                                        borderRadius: 3
+                                                    }
+                                                }}>
+                                                    {campsite.images.slice(1).map((image, index) => (
+                                                        <Box
+                                                            key={index}
+                                                            component="img"
+                                                            src={image.url}
+                                                            alt={`Campsite ${index + 1}`}
+                                                            sx={{
+                                                                height: 60,
+                                                                width: 80,
+                                                                objectFit: 'cover',
+                                                                borderRadius: 1,
+                                                                flexShrink: 0
+                                                            }}
+                                                        />
+                                                    ))}
                                                 </Box>
-                                            </CardContent>
-                                        </Card>
+                                            )}
+                                        </Paper>
                                     </Grid>
                                 ))}
                             </Grid>
                         </Paper>
-
-                        {/* Add Campsite Dialog */}
-                        <Dialog
-                            open={campsiteDialog}
-                            onClose={() => setCampsiteDialog(false)}
-                            maxWidth="md"
-                            fullWidth
-                        >
-                            <DialogTitle>Add New Campsite</DialogTitle>
-                            <DialogContent>
-                                <Grid container spacing={2} sx={{ mt: 1 }}>
-                                    <Grid item xs={12}>
-                                        <TextField
-                                            fullWidth
-                                            label="Campsite Name"
-                                            value={newCampsite.name}
-                                            onChange={(e) => setNewCampsite(prev => ({
-                                                ...prev,
-                                                name: e.target.value
-                                            }))}
-                                        />
-                                    </Grid>
-                                    <Grid item xs={12}>
-                                        <TextField
-                                            fullWidth
-                                            multiline
-                                            rows={4}
-                                            label="Description"
-                                            value={newCampsite.description}
-                                            onChange={(e) => setNewCampsite(prev => ({
-                                                ...prev,
-                                                description: e.target.value
-                                            }))}
-                                        />
-                                    </Grid>
-                                    <Grid item xs={6}>
-                                        <TextField
-                                            fullWidth
-                                            type="number"
-                                            label="Price per Night"
-                                            value={newCampsite.price}
-                                            onChange={(e) => setNewCampsite(prev => ({
-                                                ...prev,
-                                                price: e.target.value
-                                            }))}
-                                        />
-                                    </Grid>
-                                    <Grid item xs={6}>
-                                        <TextField
-                                            fullWidth
-                                            type="number"
-                                            label="Capacity"
-                                            value={newCampsite.capacity}
-                                            onChange={(e) => setNewCampsite(prev => ({
-                                                ...prev,
-                                                capacity: e.target.value
-                                            }))}
-                                        />
-                                    </Grid>
-                                    <Grid item xs={12}>
-                                        <Button
-                                            component="label"
-                                            variant="outlined"
-                                            startIcon={<PhotoCameraIcon />}
-                                            fullWidth
-                                        >
-                                            Upload Images
-                                            <input
-                                                type="file"
-                                                hidden
-                                                multiple
-                                                accept="image/*"
-                                                onChange={handleCampsiteImageUpload}
-                                            />
-                                        </Button>
-                                    </Grid>
-                                </Grid>
-                            </DialogContent>
-                            <DialogActions>
-                                <Button onClick={() => setCampsiteDialog(false)}>Cancel</Button>
-                                <Button onClick={handleAddCampsite} variant="contained">
-                                    Add Campsite
-                                </Button>
-                            </DialogActions>
-                        </Dialog>
-
-                        {/* Edit Campsite Dialog */}
-                        <Dialog
-                            open={editCampsiteDialog}
-                            onClose={() => {
-                                setEditCampsiteDialog(false);
-                                setEditingCampsite(null);
-                            }}
-                            maxWidth="md"
-                            fullWidth
-                        >
-                            <DialogTitle>Edit Campsite</DialogTitle>
-                            <DialogContent>
-                                <Grid container spacing={2} sx={{ mt: 1 }}>
-                                    <Grid item xs={12}>
-                                        <TextField
-                                            fullWidth
-                                            label="Campsite Name"
-                                            value={editingCampsite?.name || ''}
-                                            onChange={(e) => setEditingCampsite(prev => ({
-                                                ...prev,
-                                                name: e.target.value
-                                            }))}
-                                        />
-                                    </Grid>
-                                    <Grid item xs={12}>
-                                        <TextField
-                                            fullWidth
-                                            label="Description"
-                                            value={editingCampsite?.description || ''}
-                                            onChange={(e) => setEditingCampsite(prev => ({
-                                                ...prev,
-                                                description: e.target.value
-                                            }))}
-                                        />
-                                    </Grid>
-                                    <Grid item xs={6}>
-                                        <TextField
-                                            fullWidth
-                                            label="Price per Night"
-                                            value={editingCampsite?.price || ''}
-                                            onChange={(e) => setEditingCampsite(prev => ({
-                                                ...prev,
-                                                price: e.target.value
-                                            }))}
-                                        />
-                                    </Grid>
-                                    <Grid item xs={6}>
-                                        <TextField
-                                            fullWidth
-                                            label="Capacity"
-                                            value={editingCampsite?.capacity || ''}
-                                            onChange={(e) => setEditingCampsite(prev => ({
-                                                ...prev,
-                                                capacity: e.target.value
-                                            }))}
-                                        />
-                                    </Grid>
-                                    <Grid item xs={12}>
-                                        <Button
-                                            component="label"
-                                            variant="outlined"
-                                            startIcon={<PhotoCameraIcon />}
-                                            fullWidth
-                                        >
-                                            Upload Images
-                                            <input
-                                                type="file"
-                                                hidden
-                                                multiple
-                                                accept="image/*"
-                                                onChange={(e) => {
-                                                    setEditingCampsite(prev => ({
-                                                        ...prev,
-                                                        images: Array.from(e.target.files).map(file => ({
-                                                            url: URL.createObjectURL(file),
-                                                            name: file.name
-                                                        })),
-                                                    }));
-                                                }}
-                                            />
-                                        </Button>
-                                    </Grid>
-                                </Grid>
-                            </DialogContent>
-                            <DialogActions>
-                                <Button onClick={() => {
-                                    setEditCampsiteDialog(false);
-                                    setEditingCampsite(null);
-                                }}>
-                                    Cancel
-                                </Button>
-                                <Button onClick={handleEditCampsite} variant="contained">
-                                    Save Changes
-                                </Button>
-                            </DialogActions>
-                        </Dialog>
                     </TabPanel>
                 </Paper>
 
@@ -1345,53 +1536,173 @@ const BusinessProfile = () => {
                 </Dialog>
 
                 <Dialog open={openDialog.rule} onClose={() => setOpenDialog({ ...openDialog, rule: false })}>
-                    <DialogTitle>Add Rule</DialogTitle>
+                    <DialogTitle>Add Custom Rule</DialogTitle>
                     <DialogContent>
-                        <TextField
-                            autoFocus
-                            margin="dense"
-                            label="Rule"
-                            fullWidth
-                            value={newItem.rule}
-                            onChange={(e) => setNewItem({ ...newItem, rule: e.target.value })}
-                        />
+                        <Stack spacing={2} sx={{ mt: 1 }}>
+                            <TextField
+                                autoFocus
+                                label="Rule Title"
+                                fullWidth
+                                value={newItem.rule.title}
+                                onChange={(e) => setNewItem(prev => ({
+                                    ...prev,
+                                    rule: { ...prev.rule, title: e.target.value }
+                                }))}
+                                placeholder="e.g., Quiet Hours, Pet Policy"
+                            />
+                            <TextField
+                                label="Rule Content"
+                                fullWidth
+                                multiline
+                                rows={4}
+                                value={newItem.rule.content}
+                                onChange={(e) => setNewItem(prev => ({
+                                    ...prev,
+                                    rule: { ...prev.rule, content: e.target.value }
+                                }))}
+                                placeholder="Describe the rule in detail..."
+                            />
+                        </Stack>
                     </DialogContent>
                     <DialogActions>
                         <Button onClick={() => setOpenDialog({ ...openDialog, rule: false })}>Cancel</Button>
-                        <Button onClick={() => handleAddItem('rule')} variant="contained">Add</Button>
+                        <Button 
+                            onClick={() => handleAddItem('rule')} 
+                            variant="contained"
+                            disabled={!newItem.rule.title.trim() || !newItem.rule.content.trim()}
+                        >
+                            Add
+                        </Button>
                     </DialogActions>
                 </Dialog>
 
-                <Dialog open={openDialog.faq} onClose={() => setOpenDialog({ ...openDialog, faq: false })}>
-                    <DialogTitle>Add FAQ</DialogTitle>
-                    <DialogContent>
-                        <TextField
-                            autoFocus
-                            margin="dense"
-                            label="Question"
-                            fullWidth
-                            value={newItem.faq.question}
-                            onChange={(e) => setNewItem({
-                                ...newItem,
-                                faq: { ...newItem.faq, question: e.target.value }
-                            })}
-                        />
-                        <TextField
-                            margin="dense"
-                            label="Answer"
-                            fullWidth
-                            multiline
-                            rows={4}
-                            value={newItem.faq.answer}
-                            onChange={(e) => setNewItem({
-                                ...newItem,
-                                faq: { ...newItem.faq, answer: e.target.value }
-                            })}
-                        />
+                <Dialog 
+                    open={openDialog.faq} 
+                    onClose={() => setOpenDialog({ ...openDialog, faq: false })}
+                    maxWidth="md"
+                    fullWidth
+                >
+                    <DialogTitle sx={{ 
+                        borderBottom: '1px solid',
+                        borderColor: 'divider',
+                        pb: 2,
+                        bgcolor: 'grey.50'
+                    }}>
+                        <Typography variant="h6" component="div" sx={{ color: 'grey.900' }}>
+                            Add Frequently Asked Question
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+                            Add common questions and detailed answers to help your customers
+                        </Typography>
+                    </DialogTitle>
+                    <DialogContent sx={{ pt: 3 }}>
+                        <Stack spacing={3}>
+                            <Box>
+                                <Typography variant="subtitle2" sx={{ mb: 1, color: 'grey.900' }}>
+                                    Question
+                                </Typography>
+                                <TextField
+                                    autoFocus
+                                    fullWidth
+                                    placeholder="e.g., What are your check-in and check-out times?"
+                                    value={newItem.faq.question}
+                                    onChange={(e) => setNewItem(prev => ({
+                                        ...prev,
+                                        faq: { ...prev.faq, question: e.target.value }
+                                    }))}
+                                    variant="outlined"
+                                    InputProps={{
+                                        startAdornment: (
+                                            <Box sx={{ 
+                                                mr: 1, 
+                                                color: 'grey.800',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                fontWeight: 600
+                                            }}>
+                                                Q:
+                                            </Box>
+                                        ),
+                                    }}
+                                />
+                            </Box>
+                            <Box>
+                                <Typography variant="subtitle2" sx={{ mb: 1, color: 'grey.900' }}>
+                                    Answer
+                                </Typography>
+                                <TextField
+                                    fullWidth
+                                    multiline
+                                    rows={4}
+                                    placeholder="Provide a clear and detailed answer..."
+                                    value={newItem.faq.answer}
+                                    onChange={(e) => setNewItem(prev => ({
+                                        ...prev,
+                                        faq: { ...prev.faq, answer: e.target.value }
+                                    }))}
+                                    variant="outlined"
+                                    InputProps={{
+                                        startAdornment: (
+                                            <Box sx={{ 
+                                                mr: 1, 
+                                                color: 'grey.800',
+                                                alignSelf: 'flex-start',
+                                                mt: 1,
+                                                fontWeight: 600
+                                            }}>
+                                                A:
+                                            </Box>
+                                        ),
+                                    }}
+                                />
+                            </Box>
+                            {/* Preview Section */}
+                            {(newItem.faq.question || newItem.faq.answer) && (
+                                <Box sx={{ 
+                                    p: 2, 
+                                    bgcolor: 'grey.50',
+                                    borderRadius: 1,
+                                    border: '1px solid',
+                                    borderColor: 'divider'
+                                }}>
+                                    <Typography variant="subtitle2" sx={{ color: 'grey.800', mb: 2 }}>
+                                        Preview
+                                    </Typography>
+                                    {newItem.faq.question && (
+                                        <Typography variant="subtitle1" sx={{ color: 'grey.900', mb: 1 }}>
+                                            Q: {newItem.faq.question}
+                                        </Typography>
+                                    )}
+                                    {newItem.faq.answer && (
+                                        <Typography variant="body2" color="text.secondary">
+                                            A: {newItem.faq.answer}
+                                        </Typography>
+                                    )}
+                                </Box>
+                            )}
+                        </Stack>
                     </DialogContent>
-                    <DialogActions>
-                        <Button onClick={() => setOpenDialog({ ...openDialog, faq: false })}>Cancel</Button>
-                        <Button onClick={() => handleAddItem('faq')} variant="contained">Add</Button>
+                    <DialogActions sx={{ p: 3, borderTop: '1px solid', borderColor: 'divider', bgcolor: 'grey.50' }}>
+                        <Button 
+                            onClick={() => setOpenDialog({ ...openDialog, faq: false })}
+                            sx={{ color: 'grey.700' }}
+                        >
+                            Cancel
+                        </Button>
+                        <Button 
+                            onClick={() => handleAddItem('faq')} 
+                            variant="contained"
+                            disabled={!newItem.faq.question.trim() || !newItem.faq.answer.trim()}
+                            startIcon={<AddIcon />}
+                            sx={{ 
+                                bgcolor: 'grey.800',
+                                '&:hover': {
+                                    bgcolor: 'grey.900'
+                                }
+                            }}
+                        >
+                            Add FAQ
+                        </Button>
                     </DialogActions>
                 </Dialog>
             </Container>
