@@ -9,6 +9,7 @@ import {
 } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { Person as PersonIcon } from '@mui/icons-material';
 
 const Navigator = () => {
     const navigate = useNavigate();
@@ -22,6 +23,15 @@ const Navigator = () => {
         signOut();
         navigate('/');
     };
+
+    const navigationItems = [
+        {
+            label: 'Business Profile',
+            path: '/business-profile',
+            icon: <PersonIcon />,
+            requiresAuth: true
+        },
+    ];
 
     return (
         <AppBar 
@@ -50,6 +60,23 @@ const Navigator = () => {
                             CampSite
                         </Typography>
                         <Box sx={{ display: 'flex', gap: 2 }}>
+                            {navigationItems.map((item) => (
+                                (!item.requiresAuth || isAuthenticated) && (
+                                    <Button 
+                                        key={item.path}
+                                        color="inherit"
+                                        onClick={() => navigate(item.path)}
+                                        startIcon={item.icon}
+                                        sx={{ 
+                                            textTransform: 'none',
+                                            fontWeight: 400,
+                                            fontSize: '0.9rem'
+                                        }}
+                                    >
+                                        {item.label}
+                                    </Button>
+                                )
+                            ))}
                             <Button 
                                 color="inherit"
                                 onClick={() => navigate('/about')}

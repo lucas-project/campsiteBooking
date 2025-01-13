@@ -7,6 +7,7 @@ import BusinessProfile from './pages/BusinessProfile';
 import AboutPage from './pages/AboutPage';
 import PricingPage from './pages/PricingPage';
 import { AuthProvider } from './contexts/AuthContext';
+import PrivateRoute from './components/PrivateRoute';
 
 function App() {
   return (
@@ -16,7 +17,14 @@ function App() {
           <Route path="/" element={<LandingPage />} />
           <Route path="/signin" element={<SignIn />} />
           <Route path="/signup" element={<SignUp />} />
-          <Route path="/business-profile" element={<BusinessProfile />} />
+          <Route 
+            path="/business-profile" 
+            element={
+                <PrivateRoute>
+                    <BusinessProfile />
+                </PrivateRoute>
+            } 
+          />
           <Route path="/about" element={<AboutPage />} />
           <Route path="/pricing" element={<PricingPage />} />
         </Routes>
