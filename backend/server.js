@@ -3,6 +3,7 @@ const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser');
 const mongoose = require('mongoose');
+const path = require('path');
 
 const app = express();
 
@@ -10,11 +11,35 @@ const app = express();
 app.use(cors());
 app.use(bodyParser.json({ limit: '50mb' }));
 app.use(bodyParser.urlencoded({ limit: '50mb', extended: true }));
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-// Connect to MongoDB
-mongoose.connect(process.env.MONGODB_URI)
-    .then(() => console.log('Connected to MongoDB'))
-    .catch(err => console.error('MongoDB connection error:', err));
+// Connect to MongoDB Atlas
+mongoose.connect(process.env.MONGODB_URI, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+    retryWrites: true,
+    w: 'majority'
+})
+.then(() => console.log('Connected to MongoDB Atlas'))
+.catch(err => {
+    console.error('MongoDB Atlas connection error:', err);
+    process.exit(1);
+});
+
+// Add error handlers
+mongoose.connection.on('error', err => {
+    console.error('MongoDB connection error:', err);
+});
+
+mongoose.connection.on('disconnected', () => {
+    console.log('MongoDB disconnected');
+});
+
+// Handle process termination
+process.on('SIGINT', async () => {
+    await mongoose.connection.close();
+    process.exit(0);
+});
 
 // Business Profile Schema
 const businessProfileSchema = new mongoose.Schema({
@@ -157,6 +182,18 @@ app.get('/api/business-profile', async (req, res) => {
         res.status(500).json({ message: 'Error fetching profile' });
     }
 });
+
+// Add this line with your other routes
+app.use('/api/bookings', require('./routes/bookings'));
+
+// Add these lines after your existing middleware
+app.use('/api/campsites', require('./routes/campsites'));
+
+// Create uploads directory if it doesn't exist
+const fs = require('fs');
+if (!fs.existsSync('./uploads')) {
+    fs.mkdirSync('./uploads');
+}
 
 // Keep your existing server startup code
 const PORT = process.env.PORT || 5000;
