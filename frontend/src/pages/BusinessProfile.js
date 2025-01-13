@@ -27,6 +27,7 @@ import {
     Accordion,
     AccordionSummary,
     AccordionDetails,
+    InputAdornment,
 } from '@mui/material';
 import {
     Edit as EditIcon,
@@ -500,7 +501,6 @@ const BusinessProfile = () => {
             
             // Append each image file
             newCampsite.images.forEach((image, index) => {
-                // Convert base64 to file if needed
                 if (image.url.startsWith('data:')) {
                     const file = dataURLtoFile(image.url, image.name);
                     formData.append('images', file);
@@ -1702,6 +1702,110 @@ const BusinessProfile = () => {
                             }}
                         >
                             Add FAQ
+                        </Button>
+                    </DialogActions>
+                </Dialog>
+
+                {/* Add Campsite Dialog */}
+                <Dialog 
+                    open={campsiteDialog} 
+                    onClose={() => setCampsiteDialog(false)}
+                    maxWidth="md"
+                    fullWidth
+                >
+                    <DialogTitle>Add New Campsite</DialogTitle>
+                    <DialogContent>
+                        <Stack spacing={2} sx={{ mt: 2 }}>
+                            <TextField
+                                label="Campsite Name"
+                                fullWidth
+                                value={newCampsite.name}
+                                onChange={(e) => setNewCampsite(prev => ({
+                                    ...prev,
+                                    name: e.target.value
+                                }))}
+                            />
+                            <TextField
+                                label="Description"
+                                fullWidth
+                                multiline
+                                rows={4}
+                                value={newCampsite.description}
+                                onChange={(e) => setNewCampsite(prev => ({
+                                    ...prev,
+                                    description: e.target.value
+                                }))}
+                            />
+                            <TextField
+                                label="Price per Night"
+                                fullWidth
+                                type="number"
+                                value={newCampsite.price}
+                                onChange={(e) => setNewCampsite(prev => ({
+                                    ...prev,
+                                    price: e.target.value
+                                }))}
+                                InputProps={{
+                                    startAdornment: <InputAdornment position="start">$</InputAdornment>
+                                }}
+                            />
+                            <TextField
+                                label="Maximum Capacity"
+                                fullWidth
+                                type="number"
+                                value={newCampsite.capacity}
+                                onChange={(e) => setNewCampsite(prev => ({
+                                    ...prev,
+                                    capacity: e.target.value
+                                }))}
+                            />
+                            <Box>
+                                <input
+                                    type="file"
+                                    accept="image/*"
+                                    multiple
+                                    hidden
+                                    id="campsite-images"
+                                    onChange={(e) => handleCampsiteImageUpload(e)}
+                                />
+                                <label htmlFor="campsite-images">
+                                    <Button
+                                        component="span"
+                                        variant="outlined"
+                                        startIcon={<PhotoCameraIcon />}
+                                    >
+                                        Upload Images
+                                    </Button>
+                                </label>
+                            </Box>
+                            {newCampsite.images.length > 0 && (
+                                <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                                    {newCampsite.images.map((image, index) => (
+                                        <Box
+                                            key={index}
+                                            component="img"
+                                            src={image.url}
+                                            alt={`Preview ${index + 1}`}
+                                            sx={{
+                                                width: 100,
+                                                height: 100,
+                                                objectFit: 'cover',
+                                                borderRadius: 1
+                                            }}
+                                        />
+                                    ))}
+                                </Box>
+                            )}
+                        </Stack>
+                    </DialogContent>
+                    <DialogActions>
+                        <Button onClick={() => setCampsiteDialog(false)}>Cancel</Button>
+                        <Button 
+                            onClick={handleAddCampsite}
+                            variant="contained"
+                            disabled={!newCampsite.name || !newCampsite.price || !newCampsite.capacity}
+                        >
+                            Add Campsite
                         </Button>
                     </DialogActions>
                 </Dialog>
